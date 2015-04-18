@@ -11,7 +11,7 @@ class CodeImageTest(TestCase):
         image = code_image.from_text(text)
         self.assertEqual(image.size, (6*len(text), 11))
 
-    def test_multi_line_iamge(self):
+    def test_multi_line_image(self):
         text = "hello world\nhow are you"
         image = code_image.from_text(text)
         self.assertEqual(image.size, (66, 22))

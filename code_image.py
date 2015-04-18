@@ -1,6 +1,6 @@
 from PIL import Image, ImageFont, ImageDraw
 
-class CodeImage:
+class TextImage:
     def __init__(self, text):
         self.font = ImageFont.load_default()
         self.lines = text.splitlines()

@@ -23,3 +23,12 @@ def create_image_fitting(line_sizes):
         sum([l[1] for l in line_sizes])
     )
     return Image.new('1', dimensions, color=1)
+
+def from_repo(repo):
+    head_commit = repo.head.commit
+    commits = [head_commit]
+    while len(commits[-1].parents) != 0:
+        commits.append(commits[-1].parents[0])
+    images = [from_text(t) for t in
+              [c.tree.blobs[0].data_stream.read() for c in reversed(commits)]]
+    return images

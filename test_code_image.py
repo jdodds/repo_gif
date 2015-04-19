@@ -10,12 +10,12 @@ import code_image
 class CodeImageTest(TestCase):
     def test_one_line_image(self):
         text = "hello world"
-        image = code_image.from_text(text)
+        image = code_image.image_for_text(text)
         self.assertEqual(image.size, (6*len(text), 11))
 
     def test_multi_line_image(self):
         text = "hello world\nhow are you"
-        image = code_image.from_text(text)
+        image = code_image.image_for_text(text)
         self.assertEqual(image.size, (66, 22))
 
     def test_image_from_repo(self):
@@ -30,6 +30,6 @@ class CodeImageTest(TestCase):
         repo.index.add(['a-file.txt'])
         repo.index.commit("add a line!")
 
-        gif = code_image.from_repo(repo)
+        gif = code_image.images_for_repo(repo)
         self.assertEqual(2, len(gif))
         shutil.rmtree(repo_dir)

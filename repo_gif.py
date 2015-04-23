@@ -1,5 +1,7 @@
 import subprocess, tempfile, os, math
 
+import gifmaker
+
 from collections import namedtuple
 from PIL import Image, ImageFont, ImageDraw
 
@@ -81,21 +83,8 @@ def repo_gif(repo, outfile):
                 y += tallest
         gif_frames.append(image)
 
-    tempfiles = []
-    for frame in gif_frames:
-        path = tempfile.mkstemp('.png')[1]
-        frame.save(path)
-        tempfiles.append(path)
-    command = [
-        'convert',
-        '-delay', '20',
-    ]
-    command += tempfiles
-    command += ['-loop', '0']
-    command.append(outfile)
-    subprocess.call(command)
-    for tf in tempfiles:
-        os.remove(tf)
+    with open(outfile, 'wb') as fp:
+        gifmaker.makedelta(fp, gif_frames)
 
 
 if __name__ == '__main__':

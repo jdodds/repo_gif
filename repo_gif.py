@@ -1,4 +1,4 @@
-import subprocess, tempfile, os
+import subprocess, tempfile, os, math
 
 from collections import namedtuple
 from PIL import Image, ImageFont, ImageDraw
@@ -60,16 +60,25 @@ def repo_gif(repo, outfile):
                 f.data_stream.read().splitlines()
             )
 
-    widest_file = max(f.width for f in file_images.values())
-    width = widest_file * len(file_images)
-    height = max(f.height for f in file_images.values())
+    widest = max(f.width for f in file_images.values())
+    tallest = max(f.height for f in file_images.values())
+    num_images = len(file_images)
+    images_per_row = math.ceil(math.sqrt(num_images))
+    num_rows = math.ceil(num_images / images_per_row)
+    height = tallest * num_rows
+    width = widest * images_per_row
     gif_frames = []
     for commit in reversed(commits):
         image = Image.new('1', (width, height), color=1)
-        for i, f in enumerate(file_images.values()):
-            x_position = i*widest_file
+        x = 0
+        y = 0
+        for f in file_images.values():
             if f.in_commit(commit.hexsha):
-                image.paste(f.commit_image(commit.hexsha), (x_position, 0))
+                image.paste(f.commit_image(commit.hexsha), (x,y))
+            x += widest
+            if x == width:
+                x = 0
+                y += tallest
         gif_frames.append(image)
 
     tempfiles = []

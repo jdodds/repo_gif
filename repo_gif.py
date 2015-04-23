@@ -16,17 +16,20 @@ class ImagesForFile:
         self._line_height = 0
 
     def add_commit_data(self, commit, data):
-        self._data[commit] = data
         if data:
             line_sizes = [self._font.getsize(l) for l in data]
             tallest_line = max([l[1] for l in line_sizes])
             widest_line = max([l[0] for l in line_sizes])
             data_height = len(data)*tallest_line
+            if widest_line > 1000 or data_height > 1000:
+                return
             self._dimensions = Dimensions(
                 width=max(widest_line, self._dimensions.width),
                 height=max(data_height, self._dimensions.height)
             )
             self._line_height = max(tallest_line, self._line_height)
+        self._data[commit] = data
+
 
     def in_commit(self, commit):
         return commit in self._data
@@ -70,22 +73,26 @@ def repo_gif(repo, outfile):
     height = tallest * num_rows
     width = widest * images_per_row
     gif_frames = []
-    for commit in reversed(commits):
+
+    with open(outfile, 'wb') as fp:
+        gifmaker.makedelta(
+            fp,
+            frames(reversed(commits), width, height, widest, tallest, file_images.values())
+        )
+
+def frames(commits, width, height, widest, tallest, images):
+    for commit in commits:
         image = Image.new('1', (width, height), color=1)
         x = 0
         y = 0
-        for f in file_images.values():
+        for f in images:
             if f.in_commit(commit.hexsha):
                 image.paste(f.commit_image(commit.hexsha), (x,y))
             x += widest
             if x == width:
                 x = 0
                 y += tallest
-        gif_frames.append(image)
-
-    with open(outfile, 'wb') as fp:
-        gifmaker.makedelta(fp, gif_frames)
-
+        yield image
 
 if __name__ == '__main__':
     import sys, git

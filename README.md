@@ -11,5 +11,3 @@ Usage: `repo_gif /path/to/repo /path/to/output.gif`
 
 Depends on:
   + the packages in requirements.txt
-  + imagemagick's `convert` command because I can't for the life of me
-    get pillow to generate a gif.

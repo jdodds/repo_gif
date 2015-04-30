@@ -58,13 +58,10 @@ class ImagesForFile:
         return self._dimensions.height
 
     def scale(self, x_factor, y_factor):
-        for commit, image in self._commit_images.items():
-            width, height = image.size
-            width = int(width * x_factor)
-            height = int(height * y_factor)
-            new_image = image.resize((width, height))
-            self._commit_images[commit] = new_image
-        sizes = [i.size for i in self._commit_images.values()]
+        sizes = [
+            (int(i.size[0] * x_factor), int(i.size[1] * y_factor))
+            for i in self._commit_images.values()
+        ]
         width = max(s[0] for s in sizes)
         height = max(s[1] for s in sizes)
         self._dimensions = Dimensions(width=width, height=height)

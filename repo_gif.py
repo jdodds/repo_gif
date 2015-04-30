@@ -90,18 +90,33 @@ def repo_gif(repo, outfile):
         )
 
 def frames(commits, width, height, widest, tallest, images):
+    max_width = 1920
+    max_height = 1200
+    width_ratio = max_width / width
+    height_ratio = max_height / height
+    width = int(width * width_ratio)
+    height = int(height * height_ratio)
+    widest = int(widest * width_ratio)
+    tallest = int(tallest * height_ratio)
+
     for commit in commits:
         image = Image.new('1', (width, height), color=1)
         x = 0
         y = 0
         for f in images:
             if f.in_commit(commit.hexsha):
-                image.paste(f.commit_image(commit.hexsha), (x,y))
+                commit_image = f.commit_image(commit.hexsha)
+                image_width, image_height = commit_image.size
+                image_width = int(image_width * width_ratio)
+                image_height = int(image_height * height_ratio)
+                commit_image.resize((image_width, image_height))
+                image.paste(commit_image, (x,y))
             x += widest
-            if x == width:
+            if x >= width:
                 x = 0
                 y += tallest
         yield image
+
 
 if __name__ == '__main__':
     import sys, git

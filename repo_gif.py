@@ -57,7 +57,19 @@ class ImagesForFile:
     def height(self):
         return self._dimensions.height
 
-def repo_gif(repo, outfile):
+    def scale(self, x_factor, y_factor):
+        for commit, image in self._commit_images.items():
+            width, height = image.size
+            width = int(width * x_factor)
+            height = int(height * y_factor)
+            new_image = image.resize((width, height))
+            self._commit_images[commit] = new_image
+        sizes = [i.size for i in self._commit_images.values()]
+        width = max(s[0] for s in sizes)
+        height = max(s[1] for s in sizes)
+        self._dimensions = Dimensions(width=width, height=height)
+
+def repo_gif(repo, outfile, max_width=1920, max_height=1200):
     commits = [repo.head.commit]
     while len(commits[-1].parents) != 0:
         commits.append(commits[-1].parents[0])
@@ -81,7 +93,17 @@ def repo_gif(repo, outfile):
     num_rows = math.ceil(num_images / images_per_row)
     height = tallest * num_rows
     width = widest * images_per_row
-    gif_frames = []
+
+    width_ratio = max_width / width
+    height_ratio = max_height / height
+    for image in images:
+        image.scale(width_ratio, height_ratio)
+
+    widest = max(f.width for f in images)
+    tallest = max(f.height for f in images)
+
+    height = tallest * num_rows
+    width = widest * images_per_row
 
     with open(outfile, 'wb') as fp:
         gifmaker.makedelta(
@@ -90,27 +112,13 @@ def repo_gif(repo, outfile):
         )
 
 def frames(commits, width, height, widest, tallest, images):
-    max_width = 1920
-    max_height = 1200
-    width_ratio = max_width / width
-    height_ratio = max_height / height
-    width = int(width * width_ratio)
-    height = int(height * height_ratio)
-    widest = int(widest * width_ratio)
-    tallest = int(tallest * height_ratio)
-
     for commit in commits:
         image = Image.new('1', (width, height), color=1)
         x = 0
         y = 0
         for f in images:
             if f.in_commit(commit.hexsha):
-                commit_image = f.commit_image(commit.hexsha)
-                image_width, image_height = commit_image.size
-                image_width = int(image_width * width_ratio)
-                image_height = int(image_height * height_ratio)
-                commit_image.resize((image_width, image_height))
-                image.paste(commit_image, (x,y))
+                image.paste(f.commit_image(commit.hexsha), (x,y))
             x += widest
             if x >= width:
                 x = 0

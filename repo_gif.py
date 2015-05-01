@@ -8,6 +8,12 @@ from PIL import Image, ImageFont, ImageDraw
 Dimensions = namedtuple('Dimensions', ['width', 'height'])
 
 def is_binary_string(s):
+    """Determine whether or not some string, s, is part of a binary file.
+
+    The method for deciding whether or not the input is part of a binary file is
+    taken from version 5.21 of the Unix File(1) command -- see src/encoding.c at
+    https://github.com/file/file for more details if you're so inclined.
+    """
     text_chars = (
         bytearray([7, 8, 9, 10, 12, 13, 27]) +
         bytearray(range(0x20, 0x7E)) +

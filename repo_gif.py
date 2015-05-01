@@ -2,7 +2,7 @@ import tempfile, os, math, resource
 
 import gifmaker
 
-from collections import namedtuple
+from collections import namedtuple, deque
 from PIL import Image, ImageFont, ImageDraw
 
 Dimensions = namedtuple('Dimensions', ['width', 'height'])
@@ -73,10 +73,9 @@ class ImagesForFile:
         self._dimensions = Dimensions(width=width, height=height)
 
 def repo_gif(repo, outfile, max_width=1920, max_height=1200):
-    commits = [repo.head.commit]
-    while len(commits[-1].parents) != 0:
-        commits.append(commits[-1].parents[0])
-    commits.reverse()
+    commits = deque([repo.head.commit])
+    while commits[0].parents:
+        commits.appendleft(commits[0].parents[0])
 
     file_images = {}
     for commit in commits:

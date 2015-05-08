@@ -35,19 +35,25 @@ class ImagesForFile:
             ]
             return
         data = blob.data_stream.read().splitlines()
+        self._update_dimensions(data)
+        image = self._draw_image(data)
+        self._commit_images[commit] = image
+        self._seen_hashes[blob.binsha] = commit
+
+    def _update_dimensions(self, data):
         if data:
             widest_line = max(len(l) for l in data)
             self._dimensions = Dimensions(
                 width=max(widest_line, self._dimensions.width),
                 height=max(len(data), self._dimensions.height)
             )
+
+    def _draw_image(self, data):
         image = Image.new('1', self._dimensions, color=1)
         draw = ImageDraw.Draw(image)
         for y, line in enumerate(data):
             draw.line([(0,y), (len(line), y)], fill=0)
-        self._commit_images[commit] = image
-        self._seen_hashes[blob.binsha] = commit
-
+        return image
 
     def in_commit(self, commit):
         return commit in self._commit_images

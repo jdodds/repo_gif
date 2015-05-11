@@ -7,8 +7,8 @@ from PIL import Image, ImageFont, ImageDraw
 
 Dimensions = namedtuple('Dimensions', ['width', 'height'])
 
-def is_binary_string(s):
-    """Determine whether or not some string, s, is part of a binary file.
+def is_binary(this):
+    """Determine whether or not 'this', is part of a binary file.
 
     The method for deciding whether or not the input is part of a binary file is
     taken from version 5.21 of the Unix File(1) command -- see src/encoding.c at
@@ -19,7 +19,10 @@ def is_binary_string(s):
         bytearray(range(0x20, 0x7E)) +
         bytearray(range(0x80, 0xFF))
     )
-    return bool(s.translate(None, text_chars))
+    return bool(this.translate(None, text_chars))
+
+def is_text(this):
+    return not is_binary(this)
 
 
 class FileHistory:
@@ -91,7 +94,7 @@ def repo_gif(repo, outfile, max_width=1920, max_height=1200):
     for commit in commits:
         for f in commit.tree.traverse(
                 lambda i,d: i.type=='blob' and
-                not is_binary_string(i.data_stream.read(1024))
+                is_text(i.data_stream.read(1024))
         ):
             file_images.setdefault(f.path, FileHistoryImages(f.path)).add_commit_data(
                 commit.hexsha, f

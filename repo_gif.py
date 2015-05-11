@@ -25,11 +25,12 @@ def is_text(this):
     return not is_binary(this)
 
 class FileHistory:
-    def __init__(self, path):
+    def __init__(self, path, skip_empty=True):
         self.path = path
         self._commit_history = {}
         self._contents_to_commit = {}
         self._dimensions = Dimensions(width=0, height=0)
+        self.skip_empty = skip_empty
 
     def add_commit_data(self, commit, blob):
         data_hash = blob.binsha
@@ -39,6 +40,8 @@ class FileHistory:
             ]
             return
         lines = blob.data_stream.read().splitlines()
+        if  self.skip_empty and not lines:
+            return
         self._update_dimensions(lines)
         self._commit_history[commit] = lines
         self._contents_to_commit[data_hash] = commit
@@ -84,7 +87,7 @@ class FileHistoryImages(FileHistory):
         self._dimensions = Dimensions(width=int(width), height=int(height))
 
 
-def repo_gif(repo, outfile, max_width=1920, max_height=1200):
+def repo_gif(repo, outfile, max_width=1920, max_height=1200, skip_empty=True):
     commits = deque([repo.head.commit])
     while commits[0].parents:
         commits.appendleft(commits[0].parents[0])
@@ -95,7 +98,9 @@ def repo_gif(repo, outfile, max_width=1920, max_height=1200):
                 lambda i, d: i.type == 'blob' and
                 is_text(i.data_stream.read(1024))
         ):
-            file_images.setdefault(f.path, FileHistoryImages(f.path)).add_commit_data(
+            file_images.setdefault(
+                f.path, FileHistoryImages(f.path, skip_empty)
+            ).add_commit_data(
                 commit.hexsha, f
             )
 

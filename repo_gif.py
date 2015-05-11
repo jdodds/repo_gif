@@ -1,4 +1,4 @@
-import tempfile, os, math, resource
+import math
 
 import gifmaker
 
@@ -24,7 +24,6 @@ def is_binary(this):
 def is_text(this):
     return not is_binary(this)
 
-
 class FileHistory:
     def __init__(self, path):
         self.path = path
@@ -47,8 +46,8 @@ class FileHistory:
     def _update_dimensions(self, lines):
         widest_line = max([len(l) for l in lines] or [0])
         self._dimensions = Dimensions(
-            width = max(widest_line, self._dimensions.width),
-            height = max(len(lines), self._dimensions.height)
+            width=max(widest_line, self._dimensions.width),
+            height=max(len(lines), self._dimensions.height)
         )
 
     def in_commit(self, commit):
@@ -71,7 +70,7 @@ class FileHistoryImages(FileHistory):
         image = Image.new('1', self._dimensions, color=1)
         draw = ImageDraw.Draw(image)
         for y, line in enumerate(data):
-            draw.line([(0,y), (len(line), y)], fill=0)
+            draw.line([(0, y), (len(line), y)], fill=0)
         return image
 
     def commit_image(self, commit):
@@ -93,7 +92,7 @@ def repo_gif(repo, outfile, max_width=1920, max_height=1200):
     file_images = {}
     for commit in commits:
         for f in commit.tree.traverse(
-                lambda i,d: i.type=='blob' and
+                lambda i, d: i.type == 'blob' and
                 is_text(i.data_stream.read(1024))
         ):
             file_images.setdefault(f.path, FileHistoryImages(f.path)).add_commit_data(
@@ -133,7 +132,7 @@ def frames(commits, width, height, widest, tallest, images):
         y = 0
         for f in images:
             if f.in_commit(commit.hexsha):
-                image.paste(f.commit_image(commit.hexsha), (x,y))
+                image.paste(f.commit_image(commit.hexsha), (x, y))
             x += widest
             if x >= width:
                 x = 0

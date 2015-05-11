@@ -3,7 +3,7 @@ import math
 import gifmaker
 
 from collections import namedtuple, deque
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageOps
 
 Dimensions = namedtuple('Dimensions', ['width', 'height'])
 
@@ -69,23 +69,56 @@ class FileHistory:
 
 
 class FileHistoryImages(FileHistory):
+    def __init__(
+            self, path, skip_empty,
+            font=ImageFont.load_default(), border_size=1
+    ):
+        super().__init__(path, skip_empty)
+        self.font = font
+        self.border_size = border_size
+        self.padding = border_size * 2
+        self._path_dimensions = Dimensions(*font.getsize(path))
+        self._x_scale = self._y_scale = 1
+
     def _draw_image(self, data):
-        image = Image.new('1', self._dimensions, color=1)
+        width = max(self._path_dimensions.width, super().width)
+        height = super().height + self._path_dimensions.height
+        image = ImageOps.expand(
+            Image.new('1', (width, height), color=1),
+            self.border_size
+        )
         draw = ImageDraw.Draw(image)
+        x_pos = y_start = self.border_size
+        draw.text((x_pos, y_start), self.path, font=self.font)
+        y_start += self._path_dimensions.height
         for y, line in enumerate(data):
-            draw.line([(0, y), (len(line), y)], fill=0)
+            y_pos = y + y_start
+            draw.line([(x_pos, y_pos), (len(line) + x_pos, y_pos)], fill=0)
         return image
+
+    @property
+    def width(self):
+        return int(
+            max(
+                super().width + self.padding,
+                self._path_dimensions.width + self.padding
+            ) * self._x_scale
+        )
+
+    @property
+    def height(self):
+        return int(
+            (super().height + self._path_dimensions.height + self.padding)
+            * self._y_scale
+        )
 
     def commit_image(self, commit):
         contents = self._commit_history[commit]
         return self._draw_image(contents)
 
-    def scale(self, x_factor, y_factor):
-        width, height = self._dimensions
-        width *= x_factor
-        height *= y_factor
-        self._dimensions = Dimensions(width=int(width), height=int(height))
-
+    def scale(self, x_scale, y_scale):
+        self._x_scale = x_scale
+        self._y_scale = y_scale
 
 def repo_gif(repo, outfile, max_width=1920, max_height=1200, skip_empty=True):
     commits = deque([repo.head.commit])

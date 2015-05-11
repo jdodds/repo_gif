@@ -21,45 +21,39 @@ def is_binary_string(s):
     )
     return bool(s.translate(None, text_chars))
 
-class ImagesForFile:
+
+class FileHistory:
     def __init__(self, path):
-        self._path = path
-        self._commit_images = {}
-        self._seen_hashes = {}
+        self.path = path
+        self._commit_history = {}
+        self._contents_to_commit = {}
         self._dimensions = Dimensions(width=0, height=0)
 
     def add_commit_data(self, commit, blob):
-        if blob.binsha in self._seen_hashes:
-            self._commit_images[commit] = self._commit_images[
-                self._seen_hashes[blob.binsha]
+        data_hash = blob.binsha
+        if data_hash in self._contents_to_commit:
+            self._commit_history[commit] = self._commit_history[
+                self._contents_to_commit[data_hash]
             ]
             return
-        data = blob.data_stream.read().splitlines()
-        self._update_dimensions(data)
-        image = self._draw_image(data)
-        self._commit_images[commit] = image
-        self._seen_hashes[blob.binsha] = commit
+        lines = blob.data_stream.read().splitlines()
+        self._update_dimensions(lines)
+        self._commit_history[commit] = lines
+        self._contents_to_commit[data_hash] = commit
 
-    def _update_dimensions(self, data):
-        if data:
-            widest_line = max(len(l) for l in data)
+    def _update_dimensions(self, lines):
+        if lines: #check this for 'or' shortcut
+            widest_line = max(len(l) for l in lines)
             self._dimensions = Dimensions(
-                width=max(widest_line, self._dimensions.width),
-                height=max(len(data), self._dimensions.height)
+                width = max(widest_line, self._dimensions.width),
+                height = max(len(lines), self._dimensions.height)
             )
 
-    def _draw_image(self, data):
-        image = Image.new('1', self._dimensions, color=1)
-        draw = ImageDraw.Draw(image)
-        for y, line in enumerate(data):
-            draw.line([(0,y), (len(line), y)], fill=0)
-        return image
-
     def in_commit(self, commit):
-        return commit in self._commit_images
+        return commit in self._commit_history
 
-    def commit_image(self, commit):
-        return self._commit_images[commit]
+    def commit_contents(self, commit):
+        return self._commit_history[commit]
 
     @property
     def width(self):
@@ -69,14 +63,25 @@ class ImagesForFile:
     def height(self):
         return self._dimensions.height
 
+
+class FileHistoryImages(FileHistory):
+    def _draw_image(self, data):
+        image = Image.new('1', self._dimensions, color=1)
+        draw = ImageDraw.Draw(image)
+        for y, line in enumerate(data):
+            draw.line([(0,y), (len(line), y)], fill=0)
+        return image
+
+    def commit_image(self, commit):
+        contents = self._commit_history[commit]
+        return self._draw_image(contents)
+
     def scale(self, x_factor, y_factor):
-        sizes = [
-            (int(i.size[0] * x_factor), int(i.size[1] * y_factor))
-            for i in self._commit_images.values()
-        ]
-        width = max(s[0] for s in sizes)
-        height = max(s[1] for s in sizes)
-        self._dimensions = Dimensions(width=width, height=height)
+        width, height = self._dimensions
+        width *= x_factor
+        height *= y_factor
+        self._dimensions = Dimensions(width=int(width), height=int(height))
+
 
 def repo_gif(repo, outfile, max_width=1920, max_height=1200):
     commits = deque([repo.head.commit])
@@ -89,7 +94,7 @@ def repo_gif(repo, outfile, max_width=1920, max_height=1200):
                 lambda i,d: i.type=='blob' and
                 not is_binary_string(i.data_stream.read(1024))
         ):
-            file_images.setdefault(f.path, ImagesForFile(f.path)).add_commit_data(
+            file_images.setdefault(f.path, FileHistoryImages(f.path)).add_commit_data(
                 commit.hexsha, f
             )
 

@@ -42,12 +42,11 @@ class FileHistory:
         self._contents_to_commit[data_hash] = commit
 
     def _update_dimensions(self, lines):
-        if lines: #check this for 'or' shortcut
-            widest_line = max(len(l) for l in lines)
-            self._dimensions = Dimensions(
-                width = max(widest_line, self._dimensions.width),
-                height = max(len(lines), self._dimensions.height)
-            )
+        widest_line = max([len(l) for l in lines] or [0])
+        self._dimensions = Dimensions(
+            width = max(widest_line, self._dimensions.width),
+            height = max(len(lines), self._dimensions.height)
+        )
 
     def in_commit(self, commit):
         return commit in self._commit_history

@@ -113,16 +113,17 @@ def repo_gif(repo, outfile, max_width=1920, max_height=1200, skip_empty=True):
     height = tallest * num_rows
     width = widest * images_per_row
 
-    width_ratio = max_width / width
-    height_ratio = max_height / height
-    for image in images:
-        image.scale(width_ratio, height_ratio)
+    if width > max_width or height > max_height:
+        width_ratio = max_width / width
+        height_ratio = max_height / height
+        for image in images:
+            image.scale(width_ratio, height_ratio)
 
-    widest = max(f.width for f in images)
-    tallest = max(f.height for f in images)
+        widest = max(f.width for f in images)
+        tallest = max(f.height for f in images)
 
-    height = tallest * num_rows
-    width = widest * images_per_row
+        height = tallest * num_rows
+        width = widest * images_per_row
 
     with open(outfile, 'wb') as fp:
         gifmaker.makedelta(

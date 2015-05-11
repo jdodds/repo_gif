@@ -1,5 +1,6 @@
 import math
 
+import aspackt
 import gifmaker
 
 from collections import namedtuple, deque
@@ -137,45 +138,26 @@ def repo_gif(repo, outfile, max_width=1920, max_height=1200, skip_empty=True):
                 commit.hexsha, f
             )
 
-    images = file_images.values()
-    widest = max(f.width for f in images)
-    tallest = max(f.height for f in images)
-    num_images = len(images)
-    images_per_row = math.ceil(math.sqrt(num_images))
-    num_rows = math.ceil(num_images / images_per_row)
-    height = tallest * num_rows
-    width = widest * images_per_row
+    images = list(file_images.values())
+    arranged = aspackt.arrangement(images)
 
-    if width > max_width or height > max_height:
-        width_ratio = max_width / width
-        height_ratio = max_height / height
-        for image in images:
-            image.scale(width_ratio, height_ratio)
-
-        widest = max(f.width for f in images)
-        tallest = max(f.height for f in images)
-
-        height = tallest * num_rows
-        width = widest * images_per_row
+    width = arranged.width
+    height = arranged.height
 
     with open(outfile, 'wb') as fp:
         gifmaker.makedelta(
             fp,
-            frames(commits, width, height, widest, tallest, images)
+            frames(commits, width, height, images, arranged)
         )
 
-def frames(commits, width, height, widest, tallest, images):
+def frames(commits, width, height, images, arranged):
     for commit in commits:
         image = Image.new('1', (width, height), color=1)
-        x = 0
-        y = 0
         for f in images:
             if f.in_commit(commit.hexsha):
-                image.paste(f.commit_image(commit.hexsha), (x, y))
-            x += widest
-            if x >= width:
-                x = 0
-                y += tallest
+                image.paste(
+                    f.commit_image(commit.hexsha),
+                    arranged[f])
         yield image
 
 
